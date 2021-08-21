@@ -7,6 +7,20 @@
 # version: 2.0
 # license: GNU GPLv3
 
+
+#Colours
+green="\e[0;32m\033[1m"
+end="\033[0m\e[0m"
+red="\e[0;31m\033[1m"
+blue="\e[0;34m\033[1m"
+yellow="\e[0;33m\033[1m"
+purple="\e[0;35m\033[1m"
+cyan="\e[0;36m\033[1m"
+gray="\e[0;37m\033[1m"
+
+
+
+
 [[ $(echo $LANG | cut -c 1-2) == "pt" ]] && _MSG="Não use 'sudo' e nem 'root'" || _MSG="Do not use 'sudo' or 'root'"
 [[ $(id -u) -eq 0 ]] && echo ${_MSG} && exit 1
 
@@ -34,6 +48,8 @@ if [[ -z $1 || $1 = @(-h|--help) ]]; then
 fi
 
 version="${0##*/} version 2.0"
+
+
 
 _updates(){
   sudo apt update
@@ -65,22 +81,65 @@ _deps_build(){
     libxcb-composite0-dev python3-xcbgen xcb-proto \
     libxcb-image0-dev libxcb-ewmh-dev \
     libxcb-icccm4-dev \
-    libcurl4-openssl-dev libjsoncpp-dev libpulse-dev libmpdclient-dev libasound2-dev libxcb-cursor-dev libxcb-xrm-dev libxcb-xkb-dev libnl-genl-3-dev
+    libcurl4-openssl-dev libjsoncpp-dev libpulse-dev libmpdclient-dev libasound2-dev libxcb-cursor-dev libxcb-xrm-dev libxcb-xkb-dev libnl-genl-3-dev \
+    lightd lightd-gtk-greeter zsh apt-transport-https
   }
 
 _apt_packs(){
   sudo apt install -y bspwm sxhkd \
     subversion rofi feh numlockx  \
     compton dunst neofetch imagemagick webp unifont tmux git vim \
-    python3-sphinx python3-packaging i3-wm
+    python3-sphinx python3-packaging i3-wm \
+    libasound2-dev curl libpulse-dev libxcb-xkb-dev i3-wm libcurl4-openssl-dev wireless-tools \
+    libxcb-cursor-dev i3-wm  kitty firefox
 }
+
+
+_tools(){
+  mkdir /tmp/installation
+  cd /tmp/installation
+  wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+  sudo install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+  sudo sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+  rm -f packages.microsoft.gpg
+  sudo apt update
+  sudo apt install code # or code-insiders
+  git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
+	echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >> ~/.zshrc
+  sudo git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /root/powerlevel10k
+  sudo echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >> .zshrc
+  sudo cp   .zshrc /root/.zshrc
+	sudo apt install zsh-syntax-highlighting zsh-autosuggestions -y
+	cd /usr/share
+  sudo mkdir zsh-sudo
+  cd zsh-sudo
+  sudo wget https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/plugins/sudo/sudo.plugin.zsh
+	sudo chmod +x /usr/share/zsh-sudo/sudo.plugin.zsh
+	sudo chown $USER:$USER -R *
+  cd /tmp/installation
+ 	git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf;
+	~/.fzf/install -all
+  sudo  git clone --depth 1 https://github.com/junegunn/fzf.git /root/.fzf
+  /root/.fzf/install -all
+}
+
+
+
+}
+
+
 
 _build_polybar(){
   cd /tmp
   git clone --recursive https://github.com/polybar/polybar
   cd polybar/
   sed -i 's/read /#read /g' build.sh
-  sudo ./build.sh
+  mkdir build
+  cd build
+  cmake ..
+  make -j$(nproc)
+  # Optional. This will install the polybar executable in /usr/local/bin
+  sudo make install
 }
 
 _git_svn_packs(){
@@ -107,6 +166,15 @@ _cfg_all(){
   sed -i "s/DISTROOO/$_d/" ${HOME}/.config/polybar/user_modules.ini
   #sed -i "/$_d/s/^#//" ${HOME}/.config/polybar/scripts/menu
 }
+
+
+_cfg_srv(){
+  sudo systemctl enable lightd.service
+}
+
+
+
+
 
 _start(){
   cat <<EOF
@@ -135,6 +203,8 @@ _install(){
   _git_svn_packs
   [[ $(grep -i 'debian' /etc/issue) ]] && sudo apt -y install polybar || _build_polybar
   _cfg_all
+  _cfg_srv
+  _tools
   _ok
   exit 0
 }

@@ -1,4 +1,5 @@
-COPIED From  https://github.com/terroo/aptporn
+COPIED From  https://github.com/terroo/aptporn , customize for me.
+
 
 # aptporn
 Linux Mint, Ubuntu and Debian install [bspwm](https://github.com/baskerville/bspwm), [Polybar](https://github.com/polybar/polybar), [Rofi](https://github.com/davatorium/rofi)
