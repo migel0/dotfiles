@@ -37,6 +37,7 @@ usage: ${0##*/} [flags]
     --version,  -v  Show version
     --help,     -h  Show this is message
     --update,   -U  Update your system
+    --upgradeConfig -C Update files
 * Marcos Oliveira - <terminalroot.com.br> - APTPORN 2.0
 EOF
 }
@@ -124,12 +125,8 @@ _tools(){
 }
 
 
-
-}
-
-
-
 _build_polybar(){
+if [[ -z /usr/local/bin/polybar ]]; then
   cd /tmp
   git clone --recursive https://github.com/polybar/polybar
   cd polybar/
@@ -140,6 +137,9 @@ _build_polybar(){
   make -j$(nproc)
   # Optional. This will install the polybar executable in /usr/local/bin
   sudo make install
+else
+  echo "polybar installed"
+fi
 }
 
 _git_svn_packs(){
@@ -172,6 +172,10 @@ _cfg_srv(){
   sudo systemctl enable lightd.service
 }
 
+
+_cfg_srv(){
+  _cfg_all
+}
 
 
 
@@ -225,6 +229,7 @@ while [[ "$1" ]]; do
     "--help"|"-h") usage ;;
     "--version"|"-v") printf "%s\n" "$version" && exit 0 ;;
     "--update"|"-U") _updates && exit 0 ;;
+    "--upgradeConfig"|"-C") _cfg_all && exit 0 ;; 
     *) echo 'Invalid option.' && usage && exit 1 ;;
   esac
   shift
