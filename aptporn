@@ -55,10 +55,14 @@ version="${0##*/} version 2.0"
 _updates(){
   sudo apt update
   sudo apt full-upgrade -y
-  sudo apt clean
-  sudo apt autoremove -y
-  sudo apt autoclean
+  sudo apt upgrade
   sudo apt-get install git -y
+  sudo service fwupd start
+  sudo fwupdmgr refresh
+  sudo fwupdmgr update
+  sudo apt clean
+  sudo apt autoclean
+  sudo apt autoremove -y
   exit 0
 }
 
@@ -83,7 +87,7 @@ _deps_build(){
     libxcb-image0-dev libxcb-ewmh-dev \
     libxcb-icccm4-dev \
     libcurl4-openssl-dev libjsoncpp-dev libpulse-dev libmpdclient-dev libasound2-dev libxcb-cursor-dev libxcb-xrm-dev libxcb-xkb-dev libnl-genl-3-dev \
-    lightd lightd-gtk-greeter zsh apt-transport-https
+    lightdm  zsh apt-transport-https
   }
 
 _apt_packs(){
@@ -93,7 +97,7 @@ _apt_packs(){
     python3-sphinx python3-packaging i3-wm \
     libasound2-dev curl libpulse-dev libxcb-xkb-dev i3-wm libcurl4-openssl-dev wireless-tools \
     libxcb-cursor-dev i3-wm  kitty firefox
-}
+  }
 
 
 _tools(){
@@ -105,8 +109,8 @@ _tools(){
   rm -f packages.microsoft.gpg
   sudo apt update
   sudo apt install code # or code-insiders
-  git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/powerlevel10k
-	echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >> ~/.zshrc
+  git clone --depth=1 https://github.com/romkatv/powerlevel10k.git ~/.config/powerlevel10k
+	echo 'source ~/.config/powerlevel10k/powerlevel10k.zsh-theme' >> ~/.zshrc
   sudo git clone --depth=1 https://github.com/romkatv/powerlevel10k.git /root/powerlevel10k
   sudo echo 'source ~/powerlevel10k/powerlevel10k.zsh-theme' >> .zshrc
   sudo cp   .zshrc /root/.zshrc
@@ -126,7 +130,7 @@ _tools(){
 
 
 _build_polybar(){
-if [[ -z /usr/local/bin/polybar ]]; then
+if [[  ! -z /usr/local/bin/polybar ]]; then
   cd /tmp
   git clone --recursive https://github.com/polybar/polybar
   cd polybar/
@@ -156,7 +160,7 @@ _cfg_all(){
   mv dunst/ ${HOME}/.config/ 
   mv polybar/ ${HOME}/.config/ 
   mv rofi/ ${HOME}/.config/
-  mv wallpaper.jpg ${HOME}/.wallpaper.jpg
+  mv wallpaper/ ${HOME}/.wallpaper
   feh --bg-scale ${HOME}/.wallpaper.jpg
   NETW=$(ip addr | awk '/state UP/ {print $2}' | sed 's/://g')
   sed -i -r "s/[a-z0-9]+ ;redoo/$NETW/g" ${HOME}/.config/polybar/modules.ini
@@ -168,8 +172,26 @@ _cfg_all(){
 }
 
 
+_cfg_upgradeall(){
+  cd $CURRENT_DIR
+  rsync -vac bspwm/ ${HOME}/.config/bspwm/
+  rsync -vac sxhkd/ ${HOME}/.config/sxhkd/ 
+  rsync -vac dunst/ ${HOME}/.config/dunst/ 
+  rsync -vac polybar/ ${HOME}/.config/polybar/ 
+  rsync -vac rofi/ ${HOME}/.config/rofi/
+  rsync -vac wallpaper/ ${HOME}/.wallpaper
+  feh --bg-scale ${HOME}/.wallpaper/
+  NETW=$(ip addr | awk '/state UP/ {print $2}' | sed 's/://g')
+  sed -i -r "s/[a-z0-9]+ ;redoo/$NETW/g" ${HOME}/.config/polybar/modules.ini
+  [[ $(grep -i 'mint' /etc/issue) ]] && _d=" Linux Mint"
+  [[ $(grep -i 'ubuntu' /etc/issue) ]] && _d=" Ubuntu"
+  [[ $(grep -i 'debian' /etc/issue) ]] && _d=" Debian"
+  sed -i "s/DISTROOO/$_d/" ${HOME}/.config/polybar/user_modules.ini
+  #sed -i "/$_d/s/^#//" ${HOME}/.config/polybar/scripts/menu
+}
+
 _cfg_srv(){
-  sudo systemctl enable lightd.service
+  sudo systemctl enable lightdm.service
 }
 
 
@@ -229,7 +251,7 @@ while [[ "$1" ]]; do
     "--help"|"-h") usage ;;
     "--version"|"-v") printf "%s\n" "$version" && exit 0 ;;
     "--update"|"-U") _updates && exit 0 ;;
-    "--upgradeConfig"|"-C") _cfg_all && exit 0 ;; 
+    "--upgradeConfig"|"-C") _cfg_upgradeall && exit 0 ;; 
     *) echo 'Invalid option.' && usage && exit 1 ;;
   esac
   shift

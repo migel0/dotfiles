@@ -23,3 +23,5 @@ cd aptporn/
 sh aptporn --uninstall
 ```
 
+Scrennshoot
+
